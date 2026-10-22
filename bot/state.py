@@ -141,6 +141,19 @@ class Estado:
     # ------------------------------------------------------------------
     # Detección de descuentos falsos
     # ------------------------------------------------------------------
+    def precio_permanente(self, clave: str, precio_actual: float, minimo_obs: int = 3) -> bool:
+        """Anti-inflado #3: ¿el precio actual no cambió en varias observaciones
+        previas? (el «descuento» es permanente, no es una oferta real).
+
+        Se miran solo las observaciones ANTES de la de esta corrida.
+        """
+        entradas = self.datos["historial"].get(clave) or []
+        precios = [e.get("precio") for e in entradas if e.get("precio")]
+        previos = precios[:-1]  # sin la observación de esta corrida
+        if len(previos) < minimo_obs:
+            return False
+        return all(abs(p - precio_actual) < 0.01 for p in previos[-minimo_obs:])
+
     def advertencias(self, producto: Producto) -> list[str]:
         """Compara el 'precio original' y el precio actual con el historial."""
         avisos: list[str] = []

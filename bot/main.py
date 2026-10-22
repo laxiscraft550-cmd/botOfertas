@@ -22,7 +22,13 @@ import sys
 import time
 
 from .config import cargar_config
-from .filters import aplicar_descuento, cumple_filtros, nivel_descuento
+from .filters import (
+    aplicar_descuento,
+    cumple_filtros,
+    filtrar_originales_repetidos,
+    nivel_descuento,
+    precio_original_inflado,
+)
 from .http_client import SesionWeb
 from .models import Producto
 from .notifier import Notificador
@@ -77,6 +83,7 @@ def _recolectar(cfg: dict, solo_tiendas: set[str] | None) -> tuple[list[Producto
             continue
 
         vistos = nuevas = descartados = 0
+        candidatas: list[Producto] = []
         for producto in productos:
             estado.observar(producto.clave, producto.precio_actual)
             aplicar_descuento(producto)
@@ -88,6 +95,14 @@ def _recolectar(cfg: dict, solo_tiendas: set[str] | None) -> tuple[list[Producto
                 log.debug("[%s] descartado %s: %s", nombre, producto.id, motivo)
                 continue
 
+            # Anti-inflado #3: el precio no cambió en observaciones previas
+            if cfg["filtros"].get("descartar_descuentos_permanentes", True) and \
+                    estado.precio_permanente(producto.clave, producto.precio_actual):
+                descartados += 1
+                log.debug("[%s] descartado %s: descuento permanente (precio sin cambios)",
+                          nombre, producto.id)
+                continue
+
             producto.advertencias = estado.advertencias(producto)
             avisar, razon = estado.debe_notificar(producto.clave, producto.precio_actual)
             if not avisar:
@@ -95,6 +110,27 @@ def _recolectar(cfg: dict, solo_tiendas: set[str] | None) -> tuple[list[Producto
                 log.debug("[%s] sin aviso %s: %s", nombre, producto.id, razon)
                 continue
 
+            candidatas.append(producto)
+
+        # Anti-inflado #2: mismo «precio original» repetido en varios productos
+        inflados = filtrar_originales_repetidos(
+            candidatas, int(cfg["filtros"].get("precios_originales_repetidos") or 0)
+        )
+        claves_infladas = {p.clave for p in inflados}
+        razon_max = float(cfg["filtros"].get("razon_original_maxima") or 0)
+        for producto in candidatas:
+            if producto.clave in claves_infladas:
+                descartados += 1
+                log.debug("[%s] descartado %s: precio original repetido/inflado",
+                          nombre, producto.id)
+                continue
+            # Anti-inflado #1: razón precio original/precio actual absurda
+            if precio_original_inflado(producto, razon_max):
+                descartados += 1
+                log.debug("[%s] descartado %s: precio original %.0fx el actual (inflado)",
+                          nombre, producto.id,
+                          producto.precio_original / producto.precio_actual)
+                continue
             ofertas.append(producto)
             nuevas += 1
 

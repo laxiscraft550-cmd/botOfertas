@@ -23,6 +23,7 @@ públicas/JSON embebido + GitHub Actions.
 ## Características
 
 - **Anti-spam**: máximo 15 mensajes por corrida, ordenados por mayor descuento.
+- **Anti-inflado**: descarta "ofertas" con precio "antes" falso (ver sección abajo).
 - **Sin duplicados**: guarda en `data/estado.json` lo ya notificado; solo
   vuelve a avisar si el precio **bajó**.
 - **Detección de falsos descuentos**: historial de precios por producto; si el
@@ -141,6 +142,21 @@ En tu repo de GitHub: **Settings → Secrets and variables → Actions → New r
   tras cada corrida.
 
 ---
+
+## Filtros anti-inflado (precios "antes" falsos)
+
+Algunas tiendas publican precios "antes" inflados (ej. audífonos de S/29
+"antes S/5,619"). El bot aplica **3 capas** en `config.yaml → filtros`:
+
+| Filtro | Default | Qué hace |
+|---|---|---|
+| `razon_original_maxima` | `10` | Descarta si el "antes" supera 10× el precio actual (~90%+ de descuento "máximo creíble"). Pon `0` para desactivar, o baja a `7` si quieres aún más estricto |
+| `precios_originales_repetidos` | `4` | Si el MISMO "antes" aparece en ≥4 productos distintos de una tienda, todos se descartan (señal clásica de ListPrice inflado). `0` = off |
+| `descartar_descuentos_permanentes` | `true` | Tras 3 observaciones con el precio sin cambiar, el "descuento" es permanente: se descarta |
+
+Además, los que **pasan** los filtros pero tienen indicios de inflación
+(la tienda ya mostraba un precio mucho menor en el historial) se envían con
+la advertencia ⚠️ en el mensaje.
 
 ## Persistencia del estado: ¿JSON en el repo o caché de Actions?
 

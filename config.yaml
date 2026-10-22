@@ -12,6 +12,12 @@ filtros:
                             # ej: ["laptop", "televisor", "audífonos"]
   excluir_palabras: []      # ej: ["suscripción", "gift card", "recarga"]
 
+  # ---- Anti-inflado: evita "ofertas" con precio "antes" falso ----
+  # (ej. audífonos de S/29 "antes S/5,619" = inflado)
+  razon_original_maxima: 10         # ignora si el "antes" supera 10× el precio actual (~90%+); 0 = desactivar
+  precios_originales_repetidos: 4   # si el MISMO "antes" aparece en ≥4 productos distintos, se descarta; 0 = desactivar
+  descartar_descuentos_permanentes: true  # descarta precios que no cambiaron en 3+ observaciones
+
 tiendas:
   # Orden de prioridad: Plaza Vea → Falabella → Ripley → Oechsle → Tottus → Carsa
   plazavea:                 # VTEX (API pública /api/catalog_system/...)

@@ -17,6 +17,10 @@ DEFAULTS: dict = {
         "precio_maximo": None,      # None = sin tope
         "palabras_clave": [],       # vacío = todas las categorías
         "excluir_palabras": [],     # p. ej. ["suscripción", "gift card"]
+        # ---- Anti-inflado (precios "antes" falsos) ----
+        "razon_original_maxima": 10,       # ignora si "antes" > 10× el precio actual (~90%+); 0 = off
+        "precios_originales_repetidos": 4, # mismo "antes" en ≥4 productos = inflado; 0 = off
+        "descartar_descuentos_permanentes": True,  # descarta precios que nunca cambiaron
     },
     "tiendas": {
         "plazavea": {"activa": True, "max_paginas": 2},

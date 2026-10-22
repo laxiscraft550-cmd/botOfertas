@@ -1,7 +1,11 @@
 """Cálculo de descuentos, niveles y filtros configurables."""
 from __future__ import annotations
 
+import logging
+
 from .models import Producto
+
+log = logging.getLogger("bot.filtros")
 
 
 def calcular_descuento(precio_actual: float, precio_original: float | None) -> float:
@@ -59,3 +63,54 @@ def cumple_filtros(producto: Producto, filtros: dict) -> tuple[bool, str]:
         return False, "sin palabras clave coincidentes"
 
     return True, "ok"
+
+
+def precio_original_inflado(producto: Producto, razon_max: float) -> bool:
+    """Anti-inflado #1: si el "precio original" es muchísimas veces el precio
+    actual (ej. audífonos de S/29 "antes S/5,619" = 194×), el descuento es
+    falso. 15× equivale a un descuento máximo creíble de ~93%.
+
+    Se evalúa DESPUÉS del filtro de repetidos (el contador de repetidos debe
+    ver los precios originales aunque la razón sea absurda).
+    """
+    if razon_max <= 0 or not producto.precio_original or producto.precio_actual <= 0:
+        return False
+    return (producto.precio_original / producto.precio_actual) > razon_max
+
+
+def filtrar_originales_repetidos(
+    productos: list[Producto], min_repeticiones: int
+) -> list[Producto]:
+    """Anti-inflado #2: si el MISMO «precio original» aparece en varios
+    productos distintos de una tienda, es una señal clásica de ListPrice
+    inflado (ej. S/5,619 repetido en audífonos, parlantes y lentes).
+
+    Devuelve la lista de productos descartados (ya con su advertencia).
+    """
+    if min_repeticiones <= 0 or not productos:
+        return []
+    conteo: dict[float, int] = {}
+    for p in productos:
+        if p.precio_original:
+            conteo[p.precio_original] = conteo.get(p.precio_original, 0) + 1
+
+    descartados: list[Producto] = []
+    afectados = 0
+    for p in productos:
+        if not p.precio_original:
+            continue
+        veces = conteo[p.precio_original]
+        if veces >= min_repeticiones:
+            p.advertencias.append(
+                f"⚠️ El precio original S/{p.precio_original:,.2f} aparece en "
+                f"{veces} productos distintos: probablemente inflado"
+            )
+            descartados.append(p)
+            afectados += 1
+    if afectados:
+        log.info(
+            "Anti-inflado: descartados %d productos con precios 'originales' repetidos",
+            afectados,
+        )
+    return descartados
+
