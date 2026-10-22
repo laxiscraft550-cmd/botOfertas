@@ -5,11 +5,15 @@
 # =========================================================================
 
 filtros:
-  descuento_minimo: 60      # % mínimo general (calculado por el bot, no el de la tienda)
+  descuento_minimo: 55      # % mínimo general (calculado por el bot, no el de la tienda)
                             # niveles: 🔵 60%+ · 🟢 70%+ · 🟠 80%+ · 🔴 90%+
-  descuento_minimo_tiendas: # umbral más BAJO para tiendas prioritarias (más volumen)
+  descuento_minimo_tiendas: # umbral por tienda (las prioritarias con menos % = más volumen)
     falabella: 50
     ripley: 45
+    tottus: 50
+    plazavea: 55
+    oechsle: 55
+    carsa: 55
   precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
   precio_maximo: null       # S/ - null = sin tope
   palabras_clave: []        # vacío = vigilar TODAS las categorías
@@ -20,7 +24,7 @@ filtros:
   # (ej. audífonos de S/29 "antes S/5,619" = inflado)
   razon_original_maxima: 12         # ignora si el "antes" supera 12× el precio actual; 0 = desactivar
   precios_originales_repetidos: 4   # si el MISMO "antes" aparece en ≥4 productos distintos, se descarta; 0 = desactivar
-  descartar_descuentos_permanentes: true  # descarta precios que no cambiaron en 3+ observaciones
+  descartar_descuentos_permanentes: false  # false = solo advierte con ⚠️ pero envía
 
 tiendas:
   # Orden de prioridad: Plaza Vea → Falabella → Ripley → Oechsle → Tottus → Carsa
@@ -77,4 +81,5 @@ estado:
   ruta: data/estado.json
   historial_max_por_producto: 30    # observaciones por producto
   historial_max_productos: 5000     # tope del historial (para no inflar el JSON)
-  dias_retencion_notificados: 90    # tras 90 días sin verse, puede avisar de nuevo
+  dias_retencion_notificados: 10    # tras 10 días, una oferta vigente se vuelve a avisar
+                                    # (con precio re-verificado): flujo constante sin spam

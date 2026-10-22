@@ -12,9 +12,16 @@ log = logging.getLogger("bot.config")
 # Valores por defecto: el config.yaml puede sobrescribir cualquier clave.
 DEFAULTS: dict = {
     "filtros": {
-        "descuento_minimo": 60,     # % mínimo general
+        "descuento_minimo": 55,     # % mínimo general
         # Umbral MÁS BAJO para tiendas prioritarias (más volumen ahí):
-        "descuento_minimo_tiendas": {"falabella": 50, "ripley": 45},
+        "descuento_minimo_tiendas": {
+            "falabella": 50,
+            "ripley": 45,
+            "tottus": 50,
+            "plazavea": 55,
+            "oechsle": 55,
+            "carsa": 55,
+        },
         "precio_minimo": 15,        # S/ - evita productos absurdos de S/1-2
         "precio_maximo": None,      # None = sin tope
         "palabras_clave": [],       # vacío = todas las categorías
@@ -22,7 +29,7 @@ DEFAULTS: dict = {
         # ---- Anti-inflado (precios "antes" falsos) ----
         "razon_original_maxima": 12,       # ignora si "antes" > 12× el precio actual; 0 = off
         "precios_originales_repetidos": 4, # mismo "antes" en ≥4 productos = inflado; 0 = off
-        "descartar_descuentos_permanentes": True,  # descarta precios que nunca cambiaron
+        "descartar_descuentos_permanentes": False,  # false = solo advierte (⚠️) pero envía
     },
     "tiendas": {
         "plazavea": {"activa": True, "max_paginas": 2},
@@ -72,7 +79,9 @@ DEFAULTS: dict = {
         "ruta": "data/estado.json",
         "historial_max_por_producto": 30,
         "historial_max_productos": 5000,
-        "dias_retencion_notificados": 90,
+        # Tras N días, una oferta sigue vigente y se vuelve a avisar (con
+        # precio re-verificado). Así hay flujo constante sin spam horario.
+        "dias_retencion_notificados": 10,
     },
 }
 
