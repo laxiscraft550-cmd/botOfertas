@@ -45,6 +45,18 @@ públicas/JSON embebido + GitHub Actions.
 
 ## 2️⃣ Obtener tu chat_id
 
+**Opción fácil (helper incluido):** con el bot ya creado y habiéndole escrito
+`/start` en Telegram, ejecuta en esta carpeta:
+
+```bat
+.venv\Scripts\activate
+python obtener_chat_id.py
+```
+
+Te pide el token y te imprime tu chat_id listo para copiar.
+
+**Opción manual:**
+
 1. Abre tu bot en Telegram (busca su usuario) y presiona **Start** o escribe
    `/hola` (cualquier mensaje sirve).
 2. En tu navegador, abre (reemplaza el token):
