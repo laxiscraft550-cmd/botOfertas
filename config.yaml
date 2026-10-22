@@ -1,0 +1,67 @@
+# =========================================================================
+# Configuración del bot de ofertas (Perú)
+# Todas las claves son opcionales: si falta algo, se usa el valor por defecto
+# que está en bot/config.py. CÓMODAMENTE puedes editar este archivo.
+# =========================================================================
+
+filtros:
+  descuento_minimo: 70      # % mínimo de descuento (calculado por el bot, no el de la tienda)
+  precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
+  precio_maximo: null       # S/ - null = sin tope
+  palabras_clave: []        # vacío = vigilar TODAS las categorías
+                            # ej: ["laptop", "televisor", "audífonos"]
+  excluir_palabras: []      # ej: ["suscripción", "gift card", "recarga"]
+
+tiendas:
+  # Orden de prioridad: Plaza Vea → Falabella → Ripley → Oechsle → Tottus → Carsa
+  plazavea:                 # VTEX (API pública /api/catalog_system/...)
+    activa: true
+    max_paginas: 2          # 2 páginas x 50 productos = 100 máx. por corrida
+
+  falabella:                # Next.js SSR (__NEXT_DATA__ en página de listado)
+    activa: true
+    max_paginas: 2          # ~48 productos por página
+    urls:                   # Puedes agregar/quitar URLs de categorías o colecciones
+      - https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr
+      - https://www.falabella.com.pe/falabella-pe/category/cat40712/Laptops
+
+  ripley:                   # simple.ripley.com.pe (Next.js SSR)
+    activa: true
+    max_paginas: 2
+    urls:
+      - https://simple.ripley.com.pe/tecnologia/computacion/laptops
+      - https://simple.ripley.com.pe/tecnologia/tv-y-cine-en-casa/televisores
+      - https://simple.ripley.com.pe/electrohogar/linea-blanca/ver-todo
+
+  oechsle:                  # VTEX
+    activa: true
+    max_paginas: 2
+
+  tottus:                   # Mismo motor que Falabella (rutas /tottus-pe/lista/CATG...)
+    activa: true
+    max_paginas: 2
+    urls:
+      - https://www.tottus.com.pe/tottus-pe/lista/CATG47976/Televisores
+      - https://www.tottus.com.pe/tottus-pe/lista/CATG47996/Smartphones
+      - https://www.tottus.com.pe/tottus-pe/lista/CATG48293/Electrohogar
+
+  carsa:                    # VTEX (pese a verse como tienda "clásica", es VTEX)
+    activa: true
+    max_paginas: 2
+
+notificaciones:
+  max_por_corrida: 15       # tope de mensajes por ejecución (ordenados por mayor %)
+  pausa_entre_mensajes_seg: 1.5
+  resumen: true             # mensaje resumen antes de las ofertas
+
+http:
+  timeout_seg: 25
+  reintentos: 3
+  pausa_min_seg: 1.0        # pausa ALEATORIA entre peticiones (scraping responsable)
+  pausa_max_seg: 2.5
+
+estado:
+  ruta: data/estado.json
+  historial_max_por_producto: 30    # observaciones por producto
+  historial_max_productos: 5000     # tope del historial (para no inflar el JSON)
+  dias_retencion_notificados: 90    # tras 90 días sin verse, puede avisar de nuevo

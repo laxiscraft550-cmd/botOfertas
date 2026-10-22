@@ -1,0 +1,64 @@
+name: 🔎 Ofertas Perú
+
+# Cada hora a los :17 UTC (= 12:17 p. m. y 6:17 p. m. en Perú, UTC-5).
+# Usamos :17 en vez de :00 porque GitHub retrasa los crons exactos en la
+# hora en punto por congestión.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:            # ejecución manual desde la pestaña Actions
+    inputs:
+      max_mensajes:
+        description: "Máximo de mensajes a enviar (opcional)"
+        required: false
+        default: ""
+
+# Evita corridas superpuestas (importante para no duplicar avisos)
+concurrency:
+  group: ofertas-peru
+  cancel-in-progress: false
+
+# Permisos para poder hacer commit del estado
+permissions:
+  contents: write
+
+jobs:
+  revisar-ofertas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Revisar tiendas y enviar ofertas
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          EXTRA=""
+          if [ -n "${{ github.event.inputs.max_mensajes }}" ]; then
+            EXTRA="--max-mensajes ${{ github.event.inputs.max_mensajes }}"
+          fi
+          python -m bot $EXTRA
+
+      - name: 💾 Guardar estado (historial y notificados)
+        run: |
+          git config user.name "ofertas-bot"
+          git config user.email "ofertas-bot@users.noreply.github.com"
+          git add data/estado.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios en el estado."
+            exit 0
+          fi
+          git commit -m "chore: actualizar estado $(date -u +%FT%TZ)"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
