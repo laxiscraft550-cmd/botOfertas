@@ -27,7 +27,9 @@ def nivel_descuento(descuento_pct: float) -> tuple[str, str]:
         return "🔴", "90%+"
     if descuento_pct >= 80:
         return "🟠", "80%+"
-    return "🟢", "70%+"
+    if descuento_pct >= 70:
+        return "🟢", "70%+"
+    return "🔵", "60%+"
 
 
 def aplicar_descuento(producto: Producto) -> None:

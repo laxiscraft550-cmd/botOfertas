@@ -155,7 +155,7 @@ Algunas tiendas publican precios "antes" inflados (ej. audífonos de S/29
 
 | Filtro | Default | Qué hace |
 |---|---|---|
-| `razon_original_maxima` | `10` | Descarta si el "antes" supera 10× el precio actual (~90%+ de descuento "máximo creíble"). Pon `0` para desactivar, o baja a `7` si quieres aún más estricto |
+| `razon_original_maxima` | `12` | Descarta si el "antes" supera 12× el precio actual. Pon `0` para desactivar, o sube a `15` si quieres admitir descuentos más agresivos (y bajar a `10` si ves inflados) |
 | `precios_originales_repetidos` | `4` | Si el MISMO "antes" aparece en ≥4 productos distintos de una tienda, todos se descartan (señal clásica de ListPrice inflado). `0` = off |
 | `descartar_descuentos_permanentes` | `true` | Tras 3 observaciones con el precio sin cambiar, el "descuento" es permanente: se descarta |
 

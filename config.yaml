@@ -5,7 +5,8 @@
 # =========================================================================
 
 filtros:
-  descuento_minimo: 70      # % mínimo de descuento (calculado por el bot, no el de la tienda)
+  descuento_minimo: 60      # % mínimo de descuento (calculado por el bot, no el de la tienda)
+                            # niveles: 🔵 60%+ · 🟢 70%+ · 🟠 80%+ · 🔴 90%+
   precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
   precio_maximo: null       # S/ - null = sin tope
   palabras_clave: []        # vacío = vigilar TODAS las categorías
@@ -14,7 +15,7 @@ filtros:
 
   # ---- Anti-inflado: evita "ofertas" con precio "antes" falso ----
   # (ej. audífonos de S/29 "antes S/5,619" = inflado)
-  razon_original_maxima: 10         # ignora si el "antes" supera 10× el precio actual (~90%+); 0 = desactivar
+  razon_original_maxima: 12         # ignora si el "antes" supera 12× el precio actual; 0 = desactivar
   precios_originales_repetidos: 4   # si el MISMO "antes" aparece en ≥4 productos distintos, se descarta; 0 = desactivar
   descartar_descuentos_permanentes: true  # descarta precios que no cambiaron en 3+ observaciones
 
@@ -56,7 +57,7 @@ tiendas:
     max_paginas: 2
 
 notificaciones:
-  max_por_corrida: 15       # tope de mensajes por ejecución (ordenados por mayor %)
+  max_por_corrida: 25       # tope de mensajes por corrida (sube/baja a gusto; 10-30 es cómodo)
   pausa_entre_mensajes_seg: 1.5
   resumen: true             # mensaje resumen antes de las ofertas
   prioridad_tiendas:        # estas tiendas se envían PRIMERO si tienen ofertas;

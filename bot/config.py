@@ -12,13 +12,13 @@ log = logging.getLogger("bot.config")
 # Valores por defecto: el config.yaml puede sobrescribir cualquier clave.
 DEFAULTS: dict = {
     "filtros": {
-        "descuento_minimo": 70,     # % mínimo de descuento calculado
+        "descuento_minimo": 60,     # % mínimo de descuento calculado
         "precio_minimo": 15,        # S/ - evita productos absurdos de S/1-2
         "precio_maximo": None,      # None = sin tope
         "palabras_clave": [],       # vacío = todas las categorías
         "excluir_palabras": [],     # p. ej. ["suscripción", "gift card"]
         # ---- Anti-inflado (precios "antes" falsos) ----
-        "razon_original_maxima": 10,       # ignora si "antes" > 10× el precio actual (~90%+); 0 = off
+        "razon_original_maxima": 12,       # ignora si "antes" > 12× el precio actual; 0 = off
         "precios_originales_repetidos": 4, # mismo "antes" en ≥4 productos = inflado; 0 = off
         "descartar_descuentos_permanentes": True,  # descarta precios que nunca cambiaron
     },
@@ -55,7 +55,7 @@ DEFAULTS: dict = {
         "carsa": {"activa": True, "max_paginas": 2},
     },
     "notificaciones": {
-        "max_por_corrida": 15,      # tope de mensajes por ejecución (anti-spam)
+        "max_por_corrida": 25,      # tope de mensajes por ejecución (anti-spam)
         "pausa_entre_mensajes_seg": 1.5,
         "resumen": True,            # enviar mensaje resumen antes de las ofertas
         "prioridad_tiendas": ["falabella", "ripley"],  # se envían primero si tienen ofertas
