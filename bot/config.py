@@ -14,7 +14,7 @@ DEFAULTS: dict = {
     "filtros": {
         "descuento_minimo": 60,     # % mínimo general
         # Umbral MÁS BAJO para tiendas prioritarias (más volumen ahí):
-        "descuento_minimo_tiendas": {"falabella": 50, "ripley": 50},
+        "descuento_minimo_tiendas": {"falabella": 50, "ripley": 45},
         "precio_minimo": 15,        # S/ - evita productos absurdos de S/1-2
         "precio_maximo": None,      # None = sin tope
         "palabras_clave": [],       # vacío = todas las categorías
@@ -57,7 +57,7 @@ DEFAULTS: dict = {
         "carsa": {"activa": True, "max_paginas": 2},
     },
     "notificaciones": {
-        "max_por_corrida": 25,      # tope de mensajes por ejecución (anti-spam)
+        "max_por_corrida": 40,      # tope de mensajes por ejecución (anti-spam)
         "pausa_entre_mensajes_seg": 1.5,
         "resumen": True,            # enviar mensaje resumen antes de las ofertas
         "prioridad_tiendas": ["falabella", "ripley"],  # se envían primero si tienen ofertas

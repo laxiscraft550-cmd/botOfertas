@@ -9,7 +9,7 @@ filtros:
                             # niveles: 🔵 60%+ · 🟢 70%+ · 🟠 80%+ · 🔴 90%+
   descuento_minimo_tiendas: # umbral más BAJO para tiendas prioritarias (más volumen)
     falabella: 50
-    ripley: 50
+    ripley: 45
   precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
   precio_maximo: null       # S/ - null = sin tope
   palabras_clave: []        # vacío = vigilar TODAS las categorías
@@ -60,12 +60,12 @@ tiendas:
     max_paginas: 2
 
 notificaciones:
-  max_por_corrida: 25       # tope de mensajes por corrida (sube/baja a gusto; 10-30 es cómodo)
+  max_por_corrida: 40       # tope de mensajes por corrida (sube/baja a gusto)
   pausa_entre_mensajes_seg: 1.5
   resumen: true             # mensaje resumen antes de las ofertas
   prioridad_tiendas:        # estas tiendas se envían PRIMERO si tienen ofertas;
-    - falabella             # dentro de cada grupo se ordena por MAYOR AHORRO en S/
-    - ripley                # (favorece productos caros con buenas ofertas)
+    - falabella             # dentro de cada grupo: mayor % primero (los 90%+ raros
+    - ripley                # de Falabella van al frente), luego mayor ahorro en S/
 
 http:
   timeout_seg: 25

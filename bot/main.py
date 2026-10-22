@@ -214,18 +214,20 @@ def main(argv: list[str] | None = None) -> int:
     ofertas, stats = _recolectar(cfg, solo_tiendas)
 
     # Ordenar por mayor descuento y limitar mensajes (anti-spam)
-    # Prioridad de tiendas: Falabella y Ripley primero (si tienen ofertas).
-    # Dentro de cada grupo: mayor AHORRO en soles primero (favorece productos
-    # caros con buenas ofertas), y el % de descuento como desempate.
+    # Prioridad de tiendas: Falabella y Ripley primero. Dentro de cada grupo:
+    # 1) nivel de descuento (un 90%+ raro de Falabella va al frente),
+    # 2) mayor AHORRO en soles (productos caros con buenas ofertas),
+    # 3) el % exacto como desempate final.
     prioridad = [t.strip().lower()
                  for t in (cfg["notificaciones"].get("prioridad_tiendas") or [])]
 
-    def _clave_orden(p: Producto) -> tuple[int, float, float]:
+    def _clave_orden(p: Producto) -> tuple[int, int, float, float]:
         try:
             rango = prioridad.index(p.tienda)
         except ValueError:
             rango = len(prioridad)
-        return (rango, -ahorro_soles(p), -p.descuento_pct)
+        nivel = int(p.descuento_pct // 10)  # 90%+ → 9, 80-89% → 8, ...
+        return (rango, -nivel, -ahorro_soles(p), -p.descuento_pct)
 
     ofertas.sort(key=_clave_orden)
     limite = int(cfg["notificaciones"]["max_por_corrida"])
