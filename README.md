@@ -23,6 +23,11 @@ públicas/JSON embebido + GitHub Actions.
 ## Características
 
 - **Anti-spam**: máximo 15 mensajes por corrida, ordenados por mayor descuento.
+- **Prioridad configurable**: Falabella y Ripley se envían primero (si tienen
+  ofertas); el cupo restante se llena con las demás tiendas por mayor descuento.
+- **Comandos en Telegram**: `/start`, `/help` y `/status` responden en cada
+  corrida (el bot no tiene servidor permanente: responde en la siguiente
+  revisión, cada hora, o al lanzar "Run workflow").
 - **Anti-inflado**: descarta "ofertas" con precio "antes" falso (ver sección abajo).
 - **Sin duplicados**: guarda en `data/estado.json` lo ya notificado; solo
   vuelve a avisar si el precio **bajó**.
