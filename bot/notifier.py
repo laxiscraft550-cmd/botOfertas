@@ -81,9 +81,11 @@ class Notificador:
             + (f" · {_esc(producto.marca)}" if producto.marca else ""),
         ]
         if producto.precio_original:
+            ahorro = producto.precio_original - producto.precio_actual
             lineas.append(
                 f"💰 Antes: <s>{_monto(producto.precio_original)}</s>  →  "
-                f"Ahora: <b>{_monto(producto.precio_actual)}</b>"
+                f"Ahora: <b>{_monto(producto.precio_actual)}</b>  "
+                f"(ahorras <b>{_monto(ahorro)}</b>)"
             )
         else:
             lineas.append(f"💰 Ahora: <b>{_monto(producto.precio_actual)}</b>")

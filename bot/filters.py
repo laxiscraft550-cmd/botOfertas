@@ -40,8 +40,13 @@ def aplicar_descuento(producto: Producto) -> None:
 
 
 def cumple_filtros(producto: Producto, filtros: dict) -> tuple[bool, str]:
-    """Aplica los filtros de config. Devuelve (¿pasa?, motivo)."""
-    minimo = float(filtros.get("descuento_minimo", 70))
+    """Aplica los filtros de config. Devuelve (¿pasa?, motivo).
+
+    El descuento mínimo puede variar por tienda con
+    filtros.descuento_minimo_tiendas (p. ej. Falabella/Ripley a 50%).
+    """
+    minimos_tienda = filtros.get("descuento_minimo_tiendas") or {}
+    minimo = float(minimos_tienda.get(producto.tienda) or filtros.get("descuento_minimo", 70))
     if producto.descuento_pct < minimo:
         return False, f"descuento {producto.descuento_pct:.0f}% < {minimo:.0f}%"
 
@@ -65,6 +70,13 @@ def cumple_filtros(producto: Producto, filtros: dict) -> tuple[bool, str]:
         return False, "sin palabras clave coincidentes"
 
     return True, "ok"
+
+
+def ahorro_soles(producto: Producto) -> float:
+    """Ahorro absoluto en soles (lo que ahorras vs. el precio original)."""
+    if producto.precio_original and producto.precio_original > producto.precio_actual:
+        return producto.precio_original - producto.precio_actual
+    return 0.0
 
 
 def precio_original_inflado(producto: Producto, razon_max: float) -> bool:

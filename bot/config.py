@@ -12,7 +12,9 @@ log = logging.getLogger("bot.config")
 # Valores por defecto: el config.yaml puede sobrescribir cualquier clave.
 DEFAULTS: dict = {
     "filtros": {
-        "descuento_minimo": 60,     # % mínimo de descuento calculado
+        "descuento_minimo": 60,     # % mínimo general
+        # Umbral MÁS BAJO para tiendas prioritarias (más volumen ahí):
+        "descuento_minimo_tiendas": {"falabella": 50, "ripley": 50},
         "precio_minimo": 15,        # S/ - evita productos absurdos de S/1-2
         "precio_maximo": None,      # None = sin tope
         "palabras_clave": [],       # vacío = todas las categorías

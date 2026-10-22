@@ -23,8 +23,10 @@ públicas/JSON embebido + GitHub Actions.
 ## Características
 
 - **Anti-spam**: máximo 15 mensajes por corrida, ordenados por mayor descuento.
-- **Prioridad configurable**: Falabella y Ripley se envían primero (si tienen
-  ofertas); el cupo restante se llena con las demás tiendas por mayor descuento.
+- **Prioridad configurable**: Falabella y Ripley primero (con umbral de
+  descuento más bajo configurable por tienda) y, dentro de cada grupo, el
+  mayor **ahorro en soles** primero — así los productos caros con buenas
+  ofertas suben al tope.
 - **Comandos en Telegram**: `/start`, `/help` y `/status` responden en cada
   corrida (el bot no tiene servidor permanente: responde en la siguiente
   revisión, cada hora, o al lanzar "Run workflow").
@@ -176,17 +178,21 @@ Este proyecto usa **commit del JSON al repositorio**, y esta es la razón:
 
 ```yaml
 filtros:
-  descuento_minimo: 70     # sube a 80 si quieres solo descuentos bestiales
-  precio_minimo: 15        # sube a 30/50 para ignorar accesorios baratos
-  palabras_clave: []       # p. ej. ["laptop", "celular", "televisor"]
-  excluir_palabras: []     # p. ej. ["gift card"]
+  descuento_minimo: 60         # umbral general
+  descuento_minimo_tiendas:    # umbrales MÁS bajos para tiendas prioritarias
+    falabella: 50
+    ripley: 50
+  precio_minimo: 15            # sube a 30/50 para ignorar accesorios baratos
+  palabras_clave: []           # p. ej. ["laptop", "celular", "televisor"]
+  excluir_palabras: []         # p. ej. ["gift card"]
 tiendas:
   falabella:
     activa: true
-    max_paginas: 2         # más páginas = más cobertura, más peticiones
-    urls: [...]            # agrega tus categorías favoritas
+    max_paginas: 2             # más páginas = más cobertura, más peticiones
+    urls: [...]                # agrega tus categorías favoritas
 notificaciones:
-  max_por_corrida: 15      # baja a 5 si recibes muchos mensajes
+  max_por_corrida: 25          # baja a 10 si recibes muchos mensajes
+  prioridad_tiendas: [falabella, ripley]  # primero; luego, mayor ahorro en S/
 ```
 
 ## Estructura del proyecto

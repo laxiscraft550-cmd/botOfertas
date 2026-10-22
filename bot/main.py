@@ -23,6 +23,7 @@ import time
 
 from .config import cargar_config
 from .filters import (
+    ahorro_soles,
     aplicar_descuento,
     cumple_filtros,
     filtrar_originales_repetidos,
@@ -166,9 +167,9 @@ def _imprimir_dry_run(ofertas: list[Producto], stats: dict, limite: int) -> None
         emoji, etiqueta = nivel_descuento(p.descuento_pct)
         original = f"S/{p.precio_original:,.2f}" if p.precio_original else "—"
         print(f"{i:>2}. {emoji} [{etiqueta}] {p.descuento_pct:5.1f}%  "
-              f"{p.tienda.upper():<10} {p.nombre[:52]}")
-        print(f"    antes {original} → ahora S/{p.precio_actual:,.2f}  "
-              f"id={p.id}  {p.url[:70]}")
+              f"{p.tienda.upper():<10} {p.nombre[:50]}")
+        print(f"    antes {original} → ahora S/{p.precio_actual:,.2f} "
+              f"(ahorras S/{ahorro_soles(p):,.2f})  {p.url[:60]}")
         for advertencia in p.advertencias:
             print(f"    {advertencia}")
     print("=" * 78)
@@ -213,17 +214,18 @@ def main(argv: list[str] | None = None) -> int:
     ofertas, stats = _recolectar(cfg, solo_tiendas)
 
     # Ordenar por mayor descuento y limitar mensajes (anti-spam)
-    # Prioridad de tiendas: Falabella y Ripley primero (si tienen ofertas),
-    # después el resto ordenado por mayor descuento.
+    # Prioridad de tiendas: Falabella y Ripley primero (si tienen ofertas).
+    # Dentro de cada grupo: mayor AHORRO en soles primero (favorece productos
+    # caros con buenas ofertas), y el % de descuento como desempate.
     prioridad = [t.strip().lower()
                  for t in (cfg["notificaciones"].get("prioridad_tiendas") or [])]
 
-    def _clave_orden(p: Producto) -> tuple[int, float]:
+    def _clave_orden(p: Producto) -> tuple[int, float, float]:
         try:
             rango = prioridad.index(p.tienda)
         except ValueError:
             rango = len(prioridad)
-        return (rango, -p.descuento_pct)
+        return (rango, -ahorro_soles(p), -p.descuento_pct)
 
     ofertas.sort(key=_clave_orden)
     limite = int(cfg["notificaciones"]["max_por_corrida"])
@@ -259,11 +261,18 @@ def main(argv: list[str] | None = None) -> int:
     pausa = float(cfg["notificaciones"]["pausa_entre_mensajes_seg"])
 
     if cfg["notificaciones"].get("resumen", True):
+        minimos_tienda = cfg["filtros"].get("descuento_minimo_tiendas") or {}
+        detalle = ""
+        if minimos_tienda:
+            detalle = " (" + ", ".join(
+                f"{t.title()} ≥{int(v)}%"
+                for t, v in sorted(minimos_tienda.items())
+            ) + ")"
         resumen = (
             "🔎 Revisión de ofertas — Perú\n"
             f"Tiendas OK: {ok_tiendas}/{len(stats)}"
             + (f"\n⚠️ Con errores: {', '.join(fallos_tiendas)}" if fallos_tiendas else "")
-            + f"\nOfertas nuevas (≥{cfg['filtros']['descuento_minimo']}%): {len(ofertas)}"
+            + f"\nOfertas nuevas (≥{cfg['filtros']['descuento_minimo']}%{detalle}): {len(ofertas)}"
             + (f"\nEnviando las mejores {len(elegidas)}…" if elegidas else "")
         )
         try:

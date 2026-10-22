@@ -5,8 +5,11 @@
 # =========================================================================
 
 filtros:
-  descuento_minimo: 60      # % mínimo de descuento (calculado por el bot, no el de la tienda)
+  descuento_minimo: 60      # % mínimo general (calculado por el bot, no el de la tienda)
                             # niveles: 🔵 60%+ · 🟢 70%+ · 🟠 80%+ · 🔴 90%+
+  descuento_minimo_tiendas: # umbral más BAJO para tiendas prioritarias (más volumen)
+    falabella: 50
+    ripley: 50
   precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
   precio_maximo: null       # S/ - null = sin tope
   palabras_clave: []        # vacío = vigilar TODAS las categorías
@@ -61,8 +64,8 @@ notificaciones:
   pausa_entre_mensajes_seg: 1.5
   resumen: true             # mensaje resumen antes de las ofertas
   prioridad_tiendas:        # estas tiendas se envían PRIMERO si tienen ofertas;
-    - falabella             # si no hay, el cupo se llena con las demás (por descuento)
-    - ripley
+    - falabella             # dentro de cada grupo se ordena por MAYOR AHORRO en S/
+    - ripley                # (favorece productos caros con buenas ofertas)
 
 http:
   timeout_seg: 25
