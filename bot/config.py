@@ -58,6 +58,7 @@ DEFAULTS: dict = {
         "max_por_corrida": 15,      # tope de mensajes por ejecución (anti-spam)
         "pausa_entre_mensajes_seg": 1.5,
         "resumen": True,            # enviar mensaje resumen antes de las ofertas
+        "prioridad_tiendas": ["falabella", "ripley"],  # se envían primero si tienen ofertas
     },
     "http": {
         "timeout_seg": 25,

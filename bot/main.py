@@ -213,7 +213,19 @@ def main(argv: list[str] | None = None) -> int:
     ofertas, stats = _recolectar(cfg, solo_tiendas)
 
     # Ordenar por mayor descuento y limitar mensajes (anti-spam)
-    ofertas.sort(key=lambda p: p.descuento_pct, reverse=True)
+    # Prioridad de tiendas: Falabella y Ripley primero (si tienen ofertas),
+    # después el resto ordenado por mayor descuento.
+    prioridad = [t.strip().lower()
+                 for t in (cfg["notificaciones"].get("prioridad_tiendas") or [])]
+
+    def _clave_orden(p: Producto) -> tuple[int, float]:
+        try:
+            rango = prioridad.index(p.tienda)
+        except ValueError:
+            rango = len(prioridad)
+        return (rango, -p.descuento_pct)
+
+    ofertas.sort(key=_clave_orden)
     limite = int(cfg["notificaciones"]["max_por_corrida"])
     elegidas = ofertas[:limite]
 
@@ -233,6 +245,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     notificador = Notificador(token, chat_id)
+
+    # Responder comandos pendientes (/start, /help, /status) — ver bot/comandos.py
+    try:
+        from .comandos import procesar_comandos
+
+        procesar_comandos(token, stats)
+    except Exception as exc:  # los comandos nunca deben romper el envío de ofertas
+        log.warning("No se pudieron procesar los comandos: %s", exc)
+
     ok_tiendas = sum(1 for s in stats.values() if "error" not in s)
     fallos_tiendas = [n for n, s in stats.items() if "error" in s]
     pausa = float(cfg["notificaciones"]["pausa_entre_mensajes_seg"])

@@ -59,6 +59,9 @@ notificaciones:
   max_por_corrida: 15       # tope de mensajes por ejecución (ordenados por mayor %)
   pausa_entre_mensajes_seg: 1.5
   resumen: true             # mensaje resumen antes de las ofertas
+  prioridad_tiendas:        # estas tiendas se envían PRIMERO si tienen ofertas;
+    - falabella             # si no hay, el cupo se llena con las demás (por descuento)
+    - ripley
 
 http:
   timeout_seg: 25
