@@ -28,6 +28,7 @@ from .filters import (
     cumple_filtros,
     filtrar_originales_repetidos,
     nivel_descuento,
+    normalizar_nombre,
     precio_original_inflado,
 )
 from .http_client import SesionWeb
@@ -105,6 +106,18 @@ def _recolectar(cfg: dict, solo_tiendas: set[str] | None) -> tuple[list[Producto
                 continue
 
             producto.advertencias = estado.advertencias(producto)
+
+            # Anti-repetición #1: el MISMO producto (nombre normalizado) ya
+            # avisado en CUALQUIER tienda o variante con otro id no se repite,
+            # salvo que haya bajado del mínimo ya avisado (récord histórico).
+            if cfg["filtros"].get("evitar_repetir_productos", True):
+                visto = estado.ya_avisado_nombre(normalizar_nombre(producto.nombre))
+                if visto and producto.precio_actual >= visto[1] * 0.995:
+                    descartados += 1
+                    log.debug("[%s] repetido %s: ya avisado en %s",
+                              nombre, producto.id, visto[2])
+                    continue
+
             avisar, razon = estado.debe_notificar(producto.clave, producto.precio_actual)
             if not avisar:
                 descartados += 1
@@ -230,6 +243,22 @@ def main(argv: list[str] | None = None) -> int:
         return (rango, -nivel, -ahorro_soles(p), -p.descuento_pct)
 
     ofertas.sort(key=_clave_orden)
+
+    # Anti-repetición #2: dentro de la MISMA corrida no se envían dos copias
+    # del mismo producto (gana la mejor rankeada; las copias con otro id de
+    # otra tienda o variante se descartan aquí).
+    if cfg["filtros"].get("evitar_repetir_productos", True):
+        vistas: set[str] = set()
+        unicas: list[Producto] = []
+        for p in ofertas:
+            nn = normalizar_nombre(p.nombre)
+            if nn and nn in vistas:
+                continue
+            if nn:
+                vistas.add(nn)
+            unicas.append(p)
+        ofertas = unicas
+
     limite = int(cfg["notificaciones"]["max_por_corrida"])
     elegidas = ofertas[:limite]
 
@@ -285,7 +314,10 @@ def main(argv: list[str] | None = None) -> int:
     enviados = fallos = 0
     for producto in elegidas:
         if notificador.enviar_producto(producto):
-            cfg["_estado"].marcar_notificado(producto.clave, producto.precio_actual)
+            cfg["_estado"].marcar_notificado(
+                producto.clave, producto.precio_actual,
+                normalizar_nombre(producto.nombre),
+            )
             enviados += 1
         else:
             fallos += 1

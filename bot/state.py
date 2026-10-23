@@ -110,20 +110,47 @@ class Estado:
     # Deduplicación de notificaciones
     # ------------------------------------------------------------------
     def debe_notificar(self, clave: str, precio_actual: float) -> tuple[bool, str]:
-        """¿Corresponde avisar? Solo si es nuevo o si el precio BAJÓ."""
+        """¿Corresponde avisar? Solo si es nuevo o si el precio BAJÓ por
+        debajo del MÍNIMO histórico ya avisado (así un precio que oscila
+        sube-baja cada hora NUNCA se re-avisa)."""
         registro = self.datos["notificados"].get(clave)
         if not registro:
             return True, "nueva oferta"
-        precio_previo = float(registro.get("precio") or 0)
-        if precio_previo > 0 and precio_actual < precio_previo * 0.995:
-            return True, f"bajó de S/{precio_previo:.2f}"
-        return False, "ya notificada sin cambio de precio"
+        precio_min = float(registro.get("precio_min") or registro.get("precio") or 0)
+        if precio_min > 0 and precio_actual < precio_min * 0.995:
+            return True, f"bajó de S/{precio_min:.2f} (récord)"
+        return False, "ya notificada (sin nuevo mínimo)"
 
-    def marcar_notificado(self, clave: str, precio: float) -> None:
-        self.datos["notificados"][clave] = {
-            "precio": round(float(precio), 2),
-            "ts": _ahora_iso(),
-        }
+    def ya_avisado_nombre(self, nombre_norm: str):
+        """Anti-repetición #1: ¿el MISMO producto (por nombre normalizado)
+        ya se avisó en CUALQUIER tienda? Devuelve (clave, precio_min,
+        tienda) o None. Así el mismo producto que aparece en Plaza Vea y
+        Oechsle (o variantes con otro id) no se avisa dos veces."""
+        if not nombre_norm:
+            return None
+        for clave, registro in self.datos["notificados"].items():
+            if registro.get("nombre_norm") == nombre_norm:
+                precio_min = float(
+                    registro.get("precio_min") or registro.get("precio") or 0
+                )
+                return clave, precio_min, clave.split(":", 1)[0]
+        return None
+
+    def marcar_notificado(
+        self, clave: str, precio: float, nombre_norm: str = ""
+    ) -> None:
+        previo = self.datos["notificados"].get(clave) or {}
+        precio = round(float(precio), 2)
+        precio_min = precio
+        if previo:
+            viejo_min = float(previo.get("precio_min") or previo.get("precio") or precio)
+            precio_min = min(viejo_min, precio)
+        registro = {"precio": precio, "precio_min": precio_min, "ts": _ahora_iso()}
+        if nombre_norm:
+            registro["nombre_norm"] = nombre_norm
+        if previo.get("nombre_norm") and not nombre_norm:
+            registro["nombre_norm"] = previo["nombre_norm"]
+        self.datos["notificados"][clave] = registro
         self._podar_notificados()
 
     def _podar_notificados(self) -> None:

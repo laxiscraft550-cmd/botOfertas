@@ -20,6 +20,12 @@ filtros:
                             # ej: ["laptop", "televisor", "audífonos"]
   excluir_palabras: []      # ej: ["suscripción", "gift card", "recarga"]
 
+  # ---- Anti-repetición: por NADA del mundo se repiten ofertas ----
+  # El mismo producto (aunque esté en otra tienda o con otro código) ya
+  # avisado NO se vuelve a enviar. Única excepción: nuevo RÉCORD de precio
+  # más bajo que cualquier precio avisado antes.
+  evitar_repetir_productos: true
+
   # ---- Anti-inflado: evita "ofertas" con precio "antes" falso ----
   # (ej. audífonos de S/29 "antes S/5,619" = inflado)
   razon_original_maxima: 12         # ignora si el "antes" supera 12× el precio actual; 0 = desactivar
@@ -37,6 +43,12 @@ tiendas:
     max_paginas: 2          # ~48 productos por página
     urls:                   # Puedes agregar/quitar URLs de categorías o colecciones
       - https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr
+      # Filtros por categoría sobre la colección de descuentos CMR:
+      - "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr?f.product.L0_category_paths=CATG11950%7C%7CModa"              # ROPA
+      - "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr?f.product.L0_category_paths=CATG36090%7C%7CCalzado%20y%20zapatillas"  # CALZADO
+      - "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr?f.product.L0_category_paths=CATG33544%7C%7CNi%C3%B1os%20y%20Jugueter%C3%ADa"  # JUGUETES
+      - "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr?f.product.L0_category_paths=cat40793%7C%7CTecnolog%C3%ADa"       # TECNOLOGÍA
+      - "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr?f.product.L0_category_paths=CATG11947%7C%7CDecohogar"           # HOGAR
       - https://www.falabella.com.pe/falabella-pe/category/cat40712/Laptops
 
   ripley:                   # simple.ripley.com.pe (Next.js SSR)
@@ -46,6 +58,8 @@ tiendas:
       - https://simple.ripley.com.pe/tecnologia/computacion/laptops
       - https://simple.ripley.com.pe/tecnologia/tv-y-cine-en-casa/televisores
       - https://simple.ripley.com.pe/electrohogar/linea-blanca/ver-todo
+      - https://simple.ripley.com.pe/mujer/ropa-mujer/ver-todo     # ROPA MUJER (~16k productos)
+      - https://simple.ripley.com.pe/hombre/ropa-hombre/ver-todo   # ROPA HOMBRE (~18k productos)
 
   oechsle:                  # VTEX
     activa: true
@@ -58,6 +72,7 @@ tiendas:
       - https://www.tottus.com.pe/tottus-pe/lista/CATG47976/Televisores
       - https://www.tottus.com.pe/tottus-pe/lista/CATG47996/Smartphones
       - https://www.tottus.com.pe/tottus-pe/lista/CATG48293/Electrohogar
+      - https://www.tottus.com.pe/tottus-pe/lista/CATG16066/Abarrotes       # ABARROTES
 
   carsa:                    # VTEX (pese a verse como tienda "clásica", es VTEX)
     activa: true
@@ -81,5 +96,5 @@ estado:
   ruta: data/estado.json
   historial_max_por_producto: 30    # observaciones por producto
   historial_max_productos: 5000     # tope del historial (para no inflar el JSON)
-  dias_retencion_notificados: 10    # tras 10 días, una oferta vigente se vuelve a avisar
-                                    # (con precio re-verificado): flujo constante sin spam
+  dias_retencion_notificados: 365   # 365 días = una oferta avisada NO se repite
+                                    # NUNCA, salvo que baaje a un nuevo récord

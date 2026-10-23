@@ -26,6 +26,10 @@ DEFAULTS: dict = {
         "precio_maximo": None,      # None = sin tope
         "palabras_clave": [],       # vacío = todas las categorías
         "excluir_palabras": [],     # p. ej. ["suscripción", "gift card"]
+        # ---- Anti-repetición (por NADA del mundo se repiten ofertas) ----
+        "evitar_repetir_productos": True,  # mismo producto (en cualquier tienda o
+                                           # variante) ya avisado → no se vuelve a
+                                           # enviar, salvo nuevo RÉCORD de precio bajo
         # ---- Anti-inflado (precios "antes" falsos) ----
         "razon_original_maxima": 12,       # ignora si "antes" > 12× el precio actual; 0 = off
         "precios_originales_repetidos": 4, # mismo "antes" en ≥4 productos = inflado; 0 = off
@@ -37,8 +41,19 @@ DEFAULTS: dict = {
             "activa": True,
             "max_paginas": 2,
             "urls": [
-                # Collection general de descuentos (60k+ productos paginados)
+                # Collection general de descuentos CMR (60k+ productos)
                 "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr",
+                # Filtras por categoría sobre la colección de descuentos:
+                "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr"
+                "?f.product.L0_category_paths=CATG11950%7C%7CModa",  # ROPA
+                "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr"
+                "?f.product.L0_category_paths=CATG36090%7C%7CCalzado%20y%20zapatillas",
+                "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr"
+                "?f.product.L0_category_paths=CATG33544%7C%7CNi%C3%B1os%20y%20Jugueter%C3%ADa",  # JUGUETES
+                "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr"
+                "?f.product.L0_category_paths=cat40793%7C%7CTecnolog%C3%ADa",  # TECH
+                "https://www.falabella.com.pe/falabella-pe/collection/descuentos-cmr"
+                "?f.product.L0_category_paths=CATG11947%7C%7CDecohogar",  # HOGAR
                 "https://www.falabella.com.pe/falabella-pe/category/cat40712/Laptops",
             ],
         },
@@ -49,6 +64,8 @@ DEFAULTS: dict = {
                 "https://simple.ripley.com.pe/tecnologia/computacion/laptops",
                 "https://simple.ripley.com.pe/tecnologia/tv-y-cine-en-casa/televisores",
                 "https://simple.ripley.com.pe/electrohogar/linea-blanca/ver-todo",
+                "https://simple.ripley.com.pe/mujer/ropa-mujer/ver-todo",  # ROPA MUJER
+                "https://simple.ripley.com.pe/hombre/ropa-hombre/ver-todo",  # ROPA HOMBRE
             ],
         },
         "oechsle": {"activa": True, "max_paginas": 2},
@@ -59,6 +76,7 @@ DEFAULTS: dict = {
                 "https://www.tottus.com.pe/tottus-pe/lista/CATG47976/Televisores",
                 "https://www.tottus.com.pe/tottus-pe/lista/CATG47996/Smartphones",
                 "https://www.tottus.com.pe/tottus-pe/lista/CATG48293/Electrohogar",
+                "https://www.tottus.com.pe/tottus-pe/lista/CATG16066/Abarrotes",  # ABARROTES
             ],
         },
         "carsa": {"activa": True, "max_paginas": 2},
@@ -79,9 +97,9 @@ DEFAULTS: dict = {
         "ruta": "data/estado.json",
         "historial_max_por_producto": 30,
         "historial_max_productos": 5000,
-        # Tras N días, una oferta sigue vigente y se vuelve a avisar (con
-        # precio re-verificado). Así hay flujo constante sin spam horario.
-        "dias_retencion_notificados": 10,
+        # Tras N días SIN verse del todo, el registro de notificación se poda.
+        # Con 365 una oferta NO se re-avisa nunca (solo si baja de precio).
+        "dias_retencion_notificados": 365,
     },
 }
 

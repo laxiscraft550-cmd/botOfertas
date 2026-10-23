@@ -159,11 +159,20 @@ Algunas tiendas publican precios "antes" inflados (ej. audífonos de S/29
 |---|---|---|
 | `razon_original_maxima` | `12` | Descarta si el "antes" supera 12× el precio actual. Pon `0` para desactivar, o sube a `15` si quieres admitir descuentos más agresivos (y bajar a `10` si ves inflados) |
 | `precios_originales_repetidos` | `4` | Si el MISMO "antes" aparece en ≥4 productos distintos de una tienda, todos se descartan (señal clásica de ListPrice inflado). `0` = off |
-| `descartar_descuentos_permanentes` | `true` | Tras 3 observaciones con el precio sin cambiar, el "descuento" es permanente: se descarta |
+| `descartar_descuentos_permanentes` | `false` | `false` = solo advierte con ⚠️ pero envía. Pon `true` para descartar tras 3 observaciones con el precio sin cambiar (el "descuento" es permanente) |
 
 Además, los que **pasan** los filtros pero tienen indicios de inflación
 (la tienda ya mostraba un precio mucho menor en el historial) se envían con
 la advertencia ⚠️ en el mensaje.
+
+## 🚫 Anti-repetición: por nada del mundo se repiten ofertas
+
+| Capa | Qué bloquea |
+|---|---|
+| Mismo producto en **cualquier tienda** | El mismo artículo (nombre normalizado: sin acentos/mayúsculas/símbolos) ya avisado en Plaza Vea **u otra tienda** no se vuelve a enviar |
+| Copias **dentro de la misma corrida** | Si el mismo producto aparece con 2 códigos (variantes, otro vendedor), solo se envía el mejor rankeado |
+| **Precio oscilante** | Solo se re-avisa si el precio baja del **récord histórico** (mínimo ya avisado); un precio que sube y baja cada hora nunca se re-avisa |
+| Retención de avisos | `dias_retencion_notificados: 365` → un aviso no se repite nunca (solo bajadas de récord) |
 
 ## Persistencia del estado: ¿JSON en el repo o caché de Actions?
 
@@ -178,10 +187,11 @@ Este proyecto usa **commit del JSON al repositorio**, y esta es la razón:
 
 ```yaml
 filtros:
-  descuento_minimo: 60         # umbral general
-  descuento_minimo_tiendas:    # umbrales MÁS bajos para tiendas prioritarias
+  descuento_minimo: 55         # umbral general
+  descuento_minimo_tiendas:    # umbral por tienda (prioritarias con menos % = más volumen)
     falabella: 50
-    ripley: 50
+    ripley: 45
+  evitar_repetir_productos: true   # NUNCA repite un producto ya avisado
   precio_minimo: 15            # sube a 30/50 para ignorar accesorios baratos
   palabras_clave: []           # p. ej. ["laptop", "celular", "televisor"]
   excluir_palabras: []         # p. ej. ["gift card"]
@@ -189,10 +199,12 @@ tiendas:
   falabella:
     activa: true
     max_paginas: 2             # más páginas = más cobertura, más peticiones
-    urls: [...]                # agrega tus categorías favoritas
+    urls: [...]                # colecciones + filtros de categoría (Moda,
+                               # Juguetería, Tecnología, Decohogar, ...)
 notificaciones:
-  max_por_corrida: 25          # baja a 10 si recibes muchos mensajes
-  prioridad_tiendas: [falabella, ripley]  # primero; luego, mayor ahorro en S/
+  max_por_corrida: 40          # baja a 10 si recibes muchos mensajes
+  prioridad_tiendas: [falabella, ripley]  # primero; dentro: mayor % (los 90%+
+                                          # raros van al frente), luego ahorro
 ```
 
 ## Estructura del proyecto
@@ -234,7 +246,7 @@ fue verde y en logs no aparece `Telegram 400`.
 producto. El bot te avisa igual, pero con la advertencia.
 
 **¿Es legal/ético?** El bot solo lee páginas públicas con pocas peticiones
-por hora (≤ ~10 por tienda), con pausas y User-Agent legítimo. Es uso
+por hora (≤ ~15 por tienda), con pausas y User-Agent legítimo. Es uso
 personal y moderado.
 
 **¿Cuánto gasto en GitHub?** Nada: el plan gratuito da 2,000 min/mes de

@@ -72,6 +72,18 @@ def cumple_filtros(producto: Producto, filtros: dict) -> tuple[bool, str]:
     return True, "ok"
 
 
+def normalizar_nombre(nombre: str) -> str:
+    """Versión canónica del nombre para detectar el MISMO producto aunque
+    aparezca en varias tiendas o con variantes (mayúsculas/acentos/símbolos)."""
+    import re
+    import unicodedata
+
+    s = unicodedata.normalize("NFKD", nombre or "")
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = re.sub(r"[^a-z0-9]+", " ", s.lower())
+    return re.sub(r"\s+", " ", s).strip()
+
+
 def ahorro_soles(producto: Producto) -> float:
     """Ahorro absoluto en soles (lo que ahorras vs. el precio original)."""
     if producto.precio_original and producto.precio_original > producto.precio_actual:
