@@ -88,6 +88,12 @@ def _recolectar(cfg: dict, solo_tiendas: set[str] | None) -> tuple[list[Producto
         candidatas: list[Producto] = []
         for producto in productos:
             estado.observar(producto.clave, producto.precio_actual)
+            # Backfill: notificaciones viejas no tienen nombre_norm; al ver el
+            # producto se completa, para que el anti-repetición entre tiendas
+            # cubra también lo avisado antes de existir esa función.
+            estado.recordar_nombre(
+                producto.clave, normalizar_nombre(producto.nombre)
+            )
             aplicar_descuento(producto)
             vistos += 1
 
@@ -312,21 +318,33 @@ def main(argv: list[str] | None = None) -> int:
             log.error("No se pudo enviar el resumen: %s", exc)
 
     enviados = fallos = 0
-    for producto in elegidas:
-        if notificador.enviar_producto(producto):
-            cfg["_estado"].marcar_notificado(
-                producto.clave, producto.precio_actual,
-                normalizar_nombre(producto.nombre),
-            )
-            enviados += 1
-        else:
-            fallos += 1
-        time.sleep(pausa)
+    try:
+        for producto in elegidas:
+            if notificador.enviar_producto(producto):
+                cfg["_estado"].marcar_notificado(
+                    producto.clave, producto.precio_actual,
+                    normalizar_nombre(producto.nombre),
+                )
+                enviados += 1
+            else:
+                fallos += 1
+            time.sleep(pausa)
+    finally:
+        # El estado se guarda SIEMPRE (aunque algo falle a mitad de lote):
+        # los productos ya enviados quedan registrados y no se repiten.
+        cfg["_estado"].guardar()
 
-    cfg["_estado"].guardar()
     log.info("Corrida terminada: %d enviadas, %d fallos, %d ofertas en cola sin enviar",
              enviados, fallos, max(0, len(ofertas) - len(elegidas)))
-    return 0 if fallos == 0 else 1
+    if fallos:
+        # Un fallo de UN mensaje NO debe tumbar la corrida: si sale con
+        # código ≠ 0, Actions salta el paso de "Guardar estado" y el bot
+        # repite TODO en la siguiente corrida (bug que ya causó repeats).
+        log.warning(
+            "%d mensaje(s) fallaron (imagen/URL del producto); se reintentarán "
+            "solos en la próxima corrida. Estado guardado correctamente.", fallos,
+        )
+    return 0
 
 
 if __name__ == "__main__":

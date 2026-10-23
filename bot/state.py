@@ -153,6 +153,16 @@ class Estado:
         self.datos["notificados"][clave] = registro
         self._podar_notificados()
 
+    def recordar_nombre(self, clave: str, nombre_norm: str) -> None:
+        """Completa nombre_norm en notificaciones viejas (creadas antes de
+        existir este campo) para que el anti-repetición entre tiendas aplique
+        también a lo ya avisado."""
+        if not nombre_norm:
+            return
+        registro = self.datos["notificados"].get(clave)
+        if registro is not None and not registro.get("nombre_norm"):
+            registro["nombre_norm"] = nombre_norm
+
     def _podar_notificados(self) -> None:
         limite = datetime.now(timezone.utc) - self.retencion
         notificados = self.datos["notificados"]

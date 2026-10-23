@@ -5,15 +5,15 @@
 # =========================================================================
 
 filtros:
-  descuento_minimo: 55      # % mínimo general (calculado por el bot, no el de la tienda)
+  descuento_minimo: 50      # % mínimo general (calculado por el bot, no el de la tienda)
                             # niveles: 🔵 60%+ · 🟢 70%+ · 🟠 80%+ · 🔴 90%+
   descuento_minimo_tiendas: # umbral por tienda (las prioritarias con menos % = más volumen)
     falabella: 50
     ripley: 45
     tottus: 50
-    plazavea: 55
-    oechsle: 55
-    carsa: 55
+    plazavea: 50
+    oechsle: 50
+    carsa: 50
   precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
   precio_maximo: null       # S/ - null = sin tope
   palabras_clave: []        # vacío = vigilar TODAS las categorías

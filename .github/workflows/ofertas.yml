@@ -40,6 +40,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Revisar tiendas y enviar ofertas
+        id: bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -50,7 +51,11 @@ jobs:
           fi
           python -m bot $EXTRA
 
+      # if: always() → el estado se guarda INCLUSO si el paso del bot falla
+      # por algo inesperado. Si no, GitHub lo salta y el bot REPITE todas las
+      # ofertas de la corrida anterior en la siguiente (bug de repeats).
       - name: 💾 Guardar estado (historial y notificados)
+        if: always()
         run: |
           git config user.name "ofertas-bot"
           git config user.email "ofertas-bot@users.noreply.github.com"

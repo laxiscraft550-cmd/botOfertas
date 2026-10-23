@@ -49,8 +49,14 @@ class Notificador:
                 if datos.get("ok"):
                     return datos
                 descripcion = datos.get("description", "")
-                # Errores permanentes (400): no reintentar
+                # Errores permanentes (400): no reintentar…
                 if respuesta.status_code == 400:
+                    # …salvo URL de botón inválida: se reintenta SIN botón
+                    # (un producto con URL rara no debe perderse ni tumbar la corrida)
+                    if "BUTTON_URL_INVALID" in descripcion and "reply_markup" in payload:
+                        log.warning("Telegram rechazó la URL del botón; reintento sin botón")
+                        payload = {k: v for k, v in payload.items() if k != "reply_markup"}
+                        continue
                     raise requests.HTTPError(f"Telegram 400: {descripcion}")
                 raise requests.HTTPError(f"Telegram: {descripcion or datos}")
             except (requests.RequestException, ValueError) as exc:
@@ -97,7 +103,7 @@ class Notificador:
         caption = "\n".join(lineas)[:1024]  # límite de Telegram para captions
 
         teclado = None
-        if producto.url:
+        if producto.url and producto.url.startswith(("http://", "https://")):
             teclado = json.dumps(
                 {"inline_keyboard": [[{"text": "🛍️ Ver oferta", "url": producto.url}]]}
             )
