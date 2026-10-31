@@ -16,6 +16,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -30,6 +31,7 @@ from .filters import (
     nivel_descuento,
     normalizar_nombre,
     precio_original_inflado,
+    rango_clave,
 )
 from .http_client import SesionWeb
 from .models import Producto
@@ -164,7 +166,8 @@ def _recolectar(cfg: dict, solo_tiendas: set[str] | None) -> tuple[list[Producto
     return ofertas, stats
 
 
-def _imprimir_dry_run(ofertas: list[Producto], stats: dict, limite: int) -> None:
+def _imprimir_dry_run(ofertas: list[Producto], stats: dict,
+                      elegidas: list[Producto], rangos: list[int]) -> None:
     print("\n" + "=" * 78)
     print("🔎 MODO DE PRUEBA (--dry-run): no se envió nada a Telegram")
     print("=" * 78)
@@ -180,13 +183,13 @@ def _imprimir_dry_run(ofertas: list[Producto], stats: dict, limite: int) -> None
         print("Sin ofertas nuevas que cumplan los filtros en esta corrida.")
         print("=" * 78)
         return
-    elegidas = ofertas[:limite]
-    print(f"Ofertas nuevas: {len(ofertas)} | a mostrar (tope {limite}): {len(elegidas)}\n")
+    print(f"Ofertas nuevas: {len(ofertas)} | a enviar (por rango): {len(elegidas)}\n")
     for i, p in enumerate(elegidas, 1):
         emoji, etiqueta = nivel_descuento(p.descuento_pct)
+        rango = rango_clave(p.descuento_pct, rangos)
         original = f"S/{p.precio_original:,.2f}" if p.precio_original else "—"
-        print(f"{i:>2}. {emoji} [{etiqueta}] {p.descuento_pct:5.1f}%  "
-              f"{p.tienda.upper():<10} {p.nombre[:50]}")
+        print(f"{i:>2}. {emoji} [{etiqueta}] {rango:<6} {p.descuento_pct:5.1f}%  "
+              f"{p.tienda.upper():<10} {p.nombre[:48]}")
         print(f"    antes {original} → ahora S/{p.precio_actual:,.2f} "
               f"(ahorras S/{ahorro_soles(p):,.2f})  {p.url[:60]}")
         for advertencia in p.advertencias:
@@ -265,11 +268,27 @@ def main(argv: list[str] | None = None) -> int:
             unicas.append(p)
         ofertas = unicas
 
+    # ---------------- Selección por rangos de descuento ----------------
+    # Cada rango (40-50, 50-60, ..., 90+) tiene su propio tope de mensajes
+    # (max_por_rango) y puede tener su propio chat de Telegram.
+    rangos_cfg = [int(r) for r in
+                  (cfg["notificaciones"].get("rangos") or [40, 50, 60, 70, 80, 90])]
+    max_rango = int(cfg["notificaciones"].get("max_por_rango") or 12)
     limite = int(cfg["notificaciones"]["max_por_corrida"])
-    elegidas = ofertas[:limite]
+
+    por_rango: dict[str, list[Producto]] = {}
+    for p in ofertas:
+        por_rango.setdefault(rango_clave(p.descuento_pct, rangos_cfg), []).append(p)
+
+    elegidas: list[Producto] = []
+    # De mayor descuento a menor: si el tope global corta, se quedan los 90%+
+    orden_rangos = sorted(por_rango, key=lambda k: -int(k.split("-")[0].rstrip("+")))
+    for clave_r in orden_rangos:
+        elegidas.extend(por_rango[clave_r][:max_rango])
+    elegidas = elegidas[:limite]
 
     if args.dry_run:
-        _imprimir_dry_run(ofertas, stats, limite)
+        _imprimir_dry_run(ofertas, stats, elegidas, rangos_cfg)
         cfg["_estado"].guardar()   # historial sí se guarda; notificaciones NO
         return 0
 
@@ -283,7 +302,23 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    notificador = Notificador(token, chat_id)
+    # Chats por rango (opcional): JSON {"50-60": "-100...", "90+": "-100..."}
+    # en la variable TELEGRAM_CHATS_POR_RANGO. Los rangos sin chat asignado
+    # van al chat base.
+    chats_rango: dict[str, str] = {}
+    crudo_chats = os.environ.get("TELEGRAM_CHATS_POR_RANGO", "").strip()
+    if crudo_chats:
+        try:
+            datos_chats = json.loads(crudo_chats)
+            chats_rango = {str(k): str(v) for k, v in datos_chats.items()}
+            log.info("Chats por rango configurados: %s",
+                     ", ".join(f"{k}→…{v[-6:]}" for k, v in chats_rango.items()))
+        except ValueError as exc:
+            log.error("TELEGRAM_CHATS_POR_RANGO no es JSON válido (%s); "
+                      "todas las ofertas irán al chat base", exc)
+
+    notificador = Notificador(token, chat_id,
+                              chats_por_rango=chats_rango, rangos=rangos_cfg)
 
     # Responder comandos pendientes (/start, /help, /status) — ver bot/comandos.py
     try:
@@ -305,12 +340,23 @@ def main(argv: list[str] | None = None) -> int:
                 f"{t.title()} ≥{int(v)}%"
                 for t, v in sorted(minimos_tienda.items())
             ) + ")"
+        # Distribución por rango de descuento (cada rango = un chat)
+        conteo_rangos: dict[str, int] = {}
+        for p in elegidas:
+            r = rango_clave(p.descuento_pct, rangos_cfg)
+            conteo_rangos[r] = conteo_rangos.get(r, 0) + 1
+        dist = " · ".join(
+            f"{r}: {conteo_rangos[r]}"
+            for r in sorted(conteo_rangos,
+                            key=lambda k: -int(k.split("-")[0].rstrip("+")))
+        )
         resumen = (
             "🔎 Revisión de ofertas — Perú\n"
             f"Tiendas OK: {ok_tiendas}/{len(stats)}"
             + (f"\n⚠️ Con errores: {', '.join(fallos_tiendas)}" if fallos_tiendas else "")
             + f"\nOfertas nuevas (≥{cfg['filtros']['descuento_minimo']}%{detalle}): {len(ofertas)}"
-            + (f"\nEnviando las mejores {len(elegidas)}…" if elegidas else "")
+            + (f"\n📨 Enviando {len(elegidas)} por rango → {dist}" if elegidas else "")
+            + ("\n\nLos chats configurados reciben solo su rango." if chats_rango else "")
         )
         try:
             notificador.enviar_texto(resumen)
@@ -320,7 +366,11 @@ def main(argv: list[str] | None = None) -> int:
     enviados = fallos = 0
     try:
         for producto in elegidas:
-            if notificador.enviar_producto(producto):
+            destino = notificador.chat_para_producto(producto)
+            r = rango_clave(producto.descuento_pct, rangos_cfg)
+            log.debug("enviando %s (%.1f%%, rango %s) → chat …%s",
+                      producto.clave, producto.descuento_pct, r, destino[-6:])
+            if notificador.enviar_producto(producto, chat_id=destino):
                 cfg["_estado"].marcar_notificado(
                     producto.clave, producto.precio_actual,
                     normalizar_nombre(producto.nombre),

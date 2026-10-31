@@ -43,10 +43,10 @@ class Tienda(ABC):
         return [u for u in urls if isinstance(u, str) and u.startswith("http")]
 
 
-def url_con_pagina(base: str, pagina: int) -> str:
-    """Agrega page=N a una URL de listado respetando query string existente."""
+def url_con_pagina(base: str, pagina: int, param: str = "page") -> str:
+    """Agrega <param>=N a una URL de listado respetando query string existente."""
     separador = "&" if "?" in base else "?"
-    return f"{base}{separador}page={pagina}"
+    return f"{base}{separador}{param}={pagina}"
 
 
 def extraer_next_data(html: str) -> dict | None:

@@ -1,19 +1,23 @@
 # 🔎 Bot de Ofertas Perú (Telegram)
 
 Bot **100% gratuito** que revisa tiendas peruanas y te avisa por Telegram de
-los productos con **70% o más de descuento** (con nivel 🟢 70%+, 🟠 80%+,
-🔴 90%+). Sin Apify, sin servicios de scraping de pago: solo Python + APIs
-públicas/JSON embebido + GitHub Actions.
+los productos con **40% o más de descuento**, separados **por rango** en
+distintos chats (40-50 · 50-60 · 60-70 · 70-80 · 80-90 · 90+). Sin Apify,
+sin servicios de scraping de pago: solo Python + APIs públicas/HTML + GitHub
+Actions.
 
 ## Tiendas soportadas (y cómo se obtienen los datos)
 
 | Tienda | Método (probado en vivo) | Notas |
 |---|---|---|
 | **Plaza Vea** | API VTEX pública `/api/catalog_system/pub/products/search` ✅ | Ordena por mayor descuento con `O=OrderByBestDiscountDESC` |
-| **Falabella Perú** | JSON `__NEXT_DATA__` del HTML (SSR) ✅ | Listados paginados con `?page=N`; precios en `prices[]` |
-| **Ripley Perú** | JSON `__NEXT_DATA__` → `findabilityProps.data.products` ✅ | `ripley.com.pe` redirige a `simple.ripley.com.pe` |
+| **Falabella Perú** | JSON `__NEXT_DATA__` del HTML (SSR) ✅ | Ropa, juguetes, tecnología y hogar vía filtros de categoría |
+| **Ripley Perú** | JSON `__NEXT_DATA__` → `findabilityProps.data.products` ✅ | Bloquea IPs de GitHub (403): en la nube puede fallar, funciona local |
 | **Oechsle** | API VTEX pública ✅ | Igual que Plaza Vea |
 | **Tottus** | JSON `__NEXT_DATA__` (¡mismo motor que Falabella!) ✅ | Rutas `/tottus-pe/lista/CATG...` |
+| **Promart** | API VTEX pública ✅ | Home center: construcción, ferretería, hogar |
+| **Platanitos** | HTML de tarjetas `nd-ct__item` + atributos `data-gtm_*` ✅ | Ropa, hogar; paginación por offset `?start=N` |
+| **La Curacao** | HTML Magento 2 (`data-price-amount` final/old) ✅ | Tecnología y electrohogar; paginación `?p=N` |
 | **Carsa** | API VTEX pública ✅ | Pese a verse "clásica", Carsa **es VTEX** |
 
 > 🔎 **Importante**: el descuento se calcula SIEMPRE con
@@ -22,7 +26,11 @@ públicas/JSON embebido + GitHub Actions.
 
 ## Características
 
-- **Anti-spam**: máximo 15 mensajes por corrida, ordenados por mayor descuento.
+- **Un chat por rango de descuento**: 🟡 40-50% · 🔵 50-60% · 🟢 60-70% ·
+  🟠 70-80% · 🔴 80-90% · 💀 90+% — cada rango puede tener su propio grupo
+  de Telegram (o todo al chat base si no configuras grupos).
+- **Anti-spam**: hasta 12 mensajes por rango por corrida (80 global),
+  empezando por los 90%+ raros.
 - **Prioridad configurable**: Falabella y Ripley primero (con umbral de
   descuento más bajo configurable por tienda) y, dentro de cada grupo, el
   mayor **ahorro en soles** primero — así los productos caros con buenas
@@ -136,7 +144,27 @@ En tu repo de GitHub: **Settings → Secrets and variables → Actions → New r
 | Name | Value |
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | el token de BotFather |
-| `TELEGRAM_CHAT_ID` | tu chat_id |
+| `TELEGRAM_CHAT_ID` | tu chat_id (chat base: recibe el resumen y todo lo que no tenga rango asignado) |
+
+### 📂 Chats por rango de descuento (opcional pero recomendado)
+
+Puedes tener **un grupo de Telegram por cada rango** y que el bot reparta las
+ofertas: 🟡 40-50% → su grupo, 🔵 50-60% → su grupo, etc.
+
+1. Crea en Telegram un grupo por rango (ej. **"Ofertas 50-60"**).
+2. Agrega tu bot al grupo y escribe dentro: `@NombreDeTuBot /start`
+   (o en BotFather: `/setprivacy` → **Disabled** para no necesitar mencionarlo).
+3. Ejecuta `python obtener_chat_id.py`: lista todos tus chats con sus id y te
+   da el **JSON listo para copiar**.
+4. Crea el secret `TELEGRAM_CHATS_POR_RANGO` con ese JSON, p. ej.:
+
+```json
+{"40-50": "-1001111111111", "50-60": "-1002222222222", "60-70": "-1003333333333", "70-80": "-1004444444444", "80-90": "-1005555555555", "90+": "-1006666666666"}
+```
+
+Puedes definir **solo algunos rangos** (ej. solo `"90+"` para no perderte los
+descuentos brutales): lo que falte llega al chat base. Si no creas el secret,
+todo llega al chat base como antes.
 
 ## 6️⃣ Activar el cron y ejecutar
 

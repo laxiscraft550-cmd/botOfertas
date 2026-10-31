@@ -21,15 +21,35 @@ def calcular_descuento(precio_actual: float, precio_original: float | None) -> f
     return (precio_original - precio_actual) / precio_original * 100.0
 
 
+#: (umbral_mínimo, emoji, etiqueta) de mayor a menor — cubre los rangos de
+#: chat: 🟡 40-49 · 🔵 50-59 · 🟢 60-69 · 🟠 70-79 · 🔴 80-89 · 💀 90+
+_NIVELES = (
+    (90, "💀", "90%+"),
+    (80, "🔴", "80-89%"),
+    (70, "🟠", "70-79%"),
+    (60, "🟢", "60-69%"),
+    (50, "🔵", "50-59%"),
+    (40, "🟡", "40-49%"),
+)
+
+
 def nivel_descuento(descuento_pct: float) -> tuple[str, str]:
     """(emoji, etiqueta) según el nivel del descuento."""
-    if descuento_pct >= 90:
-        return "🔴", "90%+"
-    if descuento_pct >= 80:
-        return "🟠", "80%+"
-    if descuento_pct >= 70:
-        return "🟢", "70%+"
-    return "🔵", "60%+"
+    for umbral, emoji, etiqueta in _NIVELES:
+        if descuento_pct >= umbral:
+            return emoji, etiqueta
+    return "⚪", f"{descuento_pct:.0f}%"
+
+
+def rango_clave(descuento_pct: float, rangos: list[int]) -> str:
+    """Clave del rango al que pertenece un % de descuento, p. ej. con
+    rangos=[40,50,60,70,80,90] → '40-50', '50-60', ..., '90+'."""
+    if not rangos:
+        return "todos"
+    for i in range(len(rangos) - 1):
+        if descuento_pct < rangos[i + 1]:
+            return f"{rangos[i]}-{rangos[i + 1]}"
+    return f"{rangos[-1]}+"
 
 
 def aplicar_descuento(producto: Producto) -> None:

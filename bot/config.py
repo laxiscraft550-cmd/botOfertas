@@ -12,15 +12,18 @@ log = logging.getLogger("bot.config")
 # Valores por defecto: el config.yaml puede sobrescribir cualquier clave.
 DEFAULTS: dict = {
     "filtros": {
-        "descuento_minimo": 50,     # % mínimo general
+        "descuento_minimo": 40,     # % mínimo general (los rangos arrancan en 40)
         # Umbral por tienda (prioritarias un poco más bajos = más volumen):
         "descuento_minimo_tiendas": {
-            "falabella": 50,
-            "ripley": 45,
-            "tottus": 50,
-            "plazavea": 50,
-            "oechsle": 50,
-            "carsa": 50,
+            "falabella": 40,
+            "ripley": 40,
+            "tottus": 40,
+            "plazavea": 40,
+            "oechsle": 40,
+            "promart": 40,
+            "platanitos": 40,
+            "lacuracao": 40,
+            "carsa": 40,
         },
         "precio_minimo": 15,        # S/ - evita productos absurdos de S/1-2
         "precio_maximo": None,      # None = sin tope
@@ -69,6 +72,28 @@ DEFAULTS: dict = {
             ],
         },
         "oechsle": {"activa": True, "max_paginas": 2},
+        "promart": {"activa": True, "max_paginas": 2},
+        "platanitos": {
+            "activa": True,
+            "max_paginas": 2,
+            "urls": [
+                "https://platanitos.com/pe/productos/categoria/mujeres/ropa",  # ROPA MUJER
+                "https://platanitos.com/pe/productos/categoria/hombres/ropa",  # ROPA HOMBRE
+                "https://platanitos.com/pe/categoria/hogar-y-cocina",          # HOGAR
+            ],
+        },
+        "lacuracao": {
+            "activa": True,
+            "max_paginas": 2,
+            "urls": [
+                "https://www.lacuracao.pe/tecnologia/televisores.html",
+                "https://www.lacuracao.pe/tecnologia/celulares/celulares-y-smartphones.html",
+                "https://www.lacuracao.pe/tecnologia/computacion/laptops.html",
+                "https://www.lacuracao.pe/tecnologia/audifonos.html",
+                "https://www.lacuracao.pe/electrohogar/lavado/lavadoras.html",
+                "https://www.lacuracao.pe/hogar/menaje.html",
+            ],
+        },
         "tottus": {
             "activa": True,
             "max_paginas": 2,
@@ -82,7 +107,12 @@ DEFAULTS: dict = {
         "carsa": {"activa": True, "max_paginas": 2},
     },
     "notificaciones": {
-        "max_por_corrida": 40,      # tope de mensajes por ejecución (anti-spam)
+        # Rangos de descuento → cada rango puede tener su propio chat de
+        # Telegram (TELEGRAM_CHATS_POR_RANGO). Sin chat asignado, va al
+        # chat base (TELEGRAM_CHAT_ID).
+        "rangos": [40, 50, 60, 70, 80, 90],  # 40-50 · 50-60 · ... · 90+
+        "max_por_rango": 12,     # tope de mensajes por rango en cada corrida
+        "max_por_corrida": 80,   # tope global de seguridad por corrida
         "pausa_entre_mensajes_seg": 1.5,
         "resumen": True,            # enviar mensaje resumen antes de las ofertas
         "prioridad_tiendas": ["falabella", "ripley"],  # se envían primero si tienen ofertas

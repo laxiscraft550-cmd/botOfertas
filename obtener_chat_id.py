@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
-"""Ayudante para obtener tu chat_id de Telegram sin copiar JSON a mano.
+"""Ayudante para obtener tus chat_id de Telegram (privados y GRUPOS).
 
 Uso:
     python obtener_chat_id.py
 
-1. Te pide el token de BotFather (el que empieza con números y dos puntos).
-2. Antes de ejecutarlo, asegúrate de haberle escrito CUALQUIER mensaje a tu
-   bot en Telegram (ej. /start).
-3. Imprime tu chat_id listo para copiar al Secret TELEGRAM_CHAT_ID.
+1. Te pide el token de BotFather.
+2. Antes de ejecutarlo, escribele CUALQUIER mensaje a tu bot:
+   - En privado: /start
+   - En un GRUPO: primero agrega el bot al grupo y escribe
+     @NombreDeTuBot /start  (mencionalo, o desactiva el modo privacidad
+     con /setprivacy → Disabled en BotFather para no necesitar mencionarlo).
+3. Imprime TODOS tus chats con su id, y un JSON listo para el secret
+   TELEGRAM_CHATS_POR_RANGO (un chat por rango de descuento).
 """
 from __future__ import annotations
 
+import json
 import sys
 
 import requests
+
+RANGOS = ["40-50", "50-60", "60-70", "70-80", "80-90", "90+"]
 
 
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-    token = input("Pega tu token de BotFather (se ve como 123456:AA...) y presiona Enter:\n> ").strip()
+    token = input(
+        "Pega tu token de BotFather (se ve como 123456:AA...) y presiona Enter:\n> "
+    ).strip()
     if not token or ":" not in token:
         print("Ese token no parece válido (formato esperado: 123456789:AA...).")
         return 1
@@ -40,29 +49,54 @@ def main() -> int:
         print("Revisa el token o vuelve a BotFather con /token")
         return 1
 
-    actualizaciones = datos.get("result") or []
-    if not actualizaciones:
+    # Recoger TODOS los chats de TODAS las actualizaciones
+    chats: dict[int, dict] = {}
+    for actualizacion in datos.get("result") or []:
+        for clave in ("message", "edited_message", "channel_post"):
+            chat = (actualizacion.get(clave) or {}).get("chat")
+            if chat and isinstance(chat.get("id"), int):
+                chats[chat["id"]] = chat
+
+    if not chats:
         print(
             "No hay mensajes registrados para este bot todavía.\n"
-            "Abre tu bot en Telegram, presiona START (o escribe /hola) "
-            "y vuelve a ejecutar este script."
+            "Escribile /start a tu bot (y /start en cada grupo donde agregues\n"
+            "al bot, mencionandolo: @TuBot /start) y vuelve a ejecutar este script."
         )
         return 1
 
-    # Tomar el chat del último mensaje recibido
-    chat = actualizaciones[-1].get("message", {}).get("chat") or {}
-    chat_id = chat.get("id")
-    if not chat_id:
-        print("No se encontró un chat en los mensajes. Revisa que escribiste al bot correcto.")
-        return 1
+    print("\n" + "=" * 64)
+    print("TUS CHATS EN TELEGRAM")
+    print("=" * 64)
+    print(f"{'CHAT_ID':<20} {'TIPO':<10} NOMBRE")
+    for chat_id, chat in sorted(chats.items()):
+        nombre = chat.get("title") or chat.get("first_name") or "(sin nombre)"
+        print(f"{chat_id:<20} {chat.get('type', '?'):<10} {nombre[:30]}")
 
-    nombre = chat.get("first_name") or chat.get("title") or ""
-    tipo = chat.get("type") or "desconocido"
-    print("\n" + "=" * 50)
-    print(f"✅ ¡Listo! chat_id de {nombre} ({tipo}):")
-    print(f"\n   {chat_id}\n")
-    print("Cópialo como Secret TELEGRAM_CHAT_ID en GitHub.")
-    print("=" * 50)
+    privado = next(
+        (cid for cid, c in chats.items() if c.get("type") == "private"), None
+    )
+    if privado:
+        print(
+            f"\n👉 Secret TELEGRAM_CHAT_ID (chat base/resumen): {privado}"
+        )
+
+    grupos = [
+        (cid, c.get("title", ""))
+        for cid, c in sorted(chats.items())
+        if c.get("type") in ("group", "supergroup")
+    ]
+    if grupos:
+        print("\n👉 Para separar ofertas POR RANGO de descuento:")
+        print("   Crea un grupo por rango (ej. 'Ofertas 50-60'), agrega tu bot")
+        print("   y escribe @TuBot /start dentro. Luego copia este JSON al")
+        print("   secret TELEGRAM_CHATS_POR_RANGO completando los id:\n")
+        plantilla = {r: "<id del grupo de este rango>" for r in RANGOS}
+        print("   " + json.dumps(plantilla, ensure_ascii=False))
+        print("\n   Grupos detectados:")
+        for cid, titulo in grupos:
+            print(f"     {cid}  ←  {titulo}")
+    print("=" * 64)
     return 0
 
 

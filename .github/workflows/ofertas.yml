@@ -44,6 +44,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Chats por rango de descuento (opcional): JSON {"50-60": "-100...", ...}
+          TELEGRAM_CHATS_POR_RANGO: ${{ secrets.TELEGRAM_CHATS_POR_RANGO }}
         run: |
           EXTRA=""
           if [ -n "${{ github.event.inputs.max_mensajes }}" ]; then

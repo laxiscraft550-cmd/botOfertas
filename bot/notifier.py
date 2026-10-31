@@ -13,7 +13,7 @@ import time
 
 import requests
 
-from .filters import nivel_descuento
+from .filters import nivel_descuento, rango_clave
 from .models import Producto
 
 log = logging.getLogger("bot.telegram")
@@ -30,12 +30,27 @@ def _monto(valor: float) -> str:
 
 
 class Notificador:
-    def __init__(self, token: str, chat_id: str, reintentos: int = 3) -> None:
+    def __init__(
+        self,
+        token: str,
+        chat_id: str,
+        chats_por_rango: dict[str, str] | None = None,
+        rangos: list[int] | None = None,
+        reintentos: int = 3,
+    ) -> None:
         self.api = f"{API_BASE}/bot{token}"
-        self.chat_id = chat_id
+        self.chat_id = chat_id  # chat base: resumen + rangos sin asignar
+        # Mapa rango → chat, p. ej. {"50-60": "-100123...", "90+": "-100999..."}
+        self.chats_por_rango = chats_por_rango or {}
+        self.rangos = rangos or [40, 50, 60, 70, 80, 90]
         self.reintentos = max(1, int(reintentos))
         self._sesion = requests.Session()
         self._sesion.headers.update({"User-Agent": "ofertas-peru-bot/1.0"})
+
+    def chat_para_producto(self, producto: Producto) -> str:
+        """Chat de destino según el rango de descuento del producto."""
+        rango = rango_clave(producto.descuento_pct, self.rangos)
+        return self.chats_por_rango.get(rango) or self.chat_id
 
     # ------------------------------------------------------------------
     def _llamar(self, metodo: str, payload: dict) -> dict:
@@ -71,14 +86,20 @@ class Notificador:
         raise RuntimeError(f"Telegram {metodo} falló: {ultimo_error}") from ultimo_error
 
     # ------------------------------------------------------------------
-    def enviar_texto(self, texto: str) -> None:
+    def enviar_texto(self, texto: str, chat_id: str | None = None) -> None:
         self._llamar(
             "sendMessage",
-            {"chat_id": self.chat_id, "text": texto, "disable_web_page_preview": "true"},
+            {
+                "chat_id": chat_id or self.chat_id,
+                "text": texto,
+                "disable_web_page_preview": "true",
+            },
         )
 
-    def enviar_producto(self, producto: Producto) -> bool:
-        """Envía foto + caption + botón. Devuelve False si hubo fallo."""
+    def enviar_producto(self, producto: Producto, chat_id: str | None = None) -> bool:
+        """Envía foto + caption + botón al chat de su rango de descuento.
+        Devuelve False si hubo fallo."""
+        destino = chat_id or self.chat_para_producto(producto)
         emoji, etiqueta = nivel_descuento(producto.descuento_pct)
         lineas = [
             f"{emoji} <b>Descuento {etiqueta}</b> — <b>{producto.descuento_pct:.0f}%</b>",
@@ -114,7 +135,7 @@ class Notificador:
                 self._llamar(
                     "sendPhoto",
                     {
-                        "chat_id": self.chat_id,
+                        "chat_id": destino,
                         "photo": producto.imagen,
                         "caption": caption,
                         "parse_mode": "HTML",
@@ -130,7 +151,7 @@ class Notificador:
             self._llamar(
                 "sendMessage",
                 {
-                    "chat_id": self.chat_id,
+                    "chat_id": destino,
                     "text": f"{caption}\n🔗 {_esc(producto.url)}",
                     "parse_mode": "HTML",
                     **({"reply_markup": teclado} if teclado else {}),

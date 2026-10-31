@@ -5,15 +5,18 @@
 # =========================================================================
 
 filtros:
-  descuento_minimo: 50      # % mínimo general (calculado por el bot, no el de la tienda)
-                            # niveles: 🔵 60%+ · 🟢 70%+ · 🟠 80%+ · 🔴 90%+
-  descuento_minimo_tiendas: # umbral por tienda (las prioritarias con menos % = más volumen)
-    falabella: 50
-    ripley: 45
-    tottus: 50
-    plazavea: 50
-    oechsle: 50
-    carsa: 50
+  descuento_minimo: 40      # % mínimo general (calculado por el bot, no el de la tienda)
+                            # los chats van por rango: 40-50 · 50-60 · 60-70 · 70-80 · 80-90 · 90+
+  descuento_minimo_tiendas: # umbral por tienda
+    falabella: 40
+    ripley: 40
+    tottus: 40
+    plazavea: 40
+    oechsle: 40
+    promart: 40
+    platanitos: 40
+    lacuracao: 40
+    carsa: 40
   precio_minimo: 15         # S/ - evita productos de S/1-2 con "descuentos" absurdos
   precio_maximo: null       # S/ - null = sin tope
   palabras_clave: []        # vacío = vigilar TODAS las categorías
@@ -33,7 +36,8 @@ filtros:
   descartar_descuentos_permanentes: false  # false = solo advierte con ⚠️ pero envía
 
 tiendas:
-  # Orden de prioridad: Plaza Vea → Falabella → Ripley → Oechsle → Tottus → Carsa
+  # 9 tiendas: Plaza Vea · Falabella · Ripley · Oechsle · Tottus · Promart
+  #            · Platanitos · La Curacao · Carsa
   plazavea:                 # VTEX (API pública /api/catalog_system/...)
     activa: true
     max_paginas: 2          # 2 páginas x 50 productos = 100 máx. por corrida
@@ -74,14 +78,42 @@ tiendas:
       - https://www.tottus.com.pe/tottus-pe/lista/CATG48293/Electrohogar
       - https://www.tottus.com.pe/tottus-pe/lista/CATG16066/Abarrotes       # ABARROTES
 
+  promart:                  # VTEX (home center: construcción, ferretería, hogar)
+    activa: true
+    max_paginas: 2
+
+  platanitos:               # Plataforma propia (tarjetas nd-ct__item + data-gtm_*)
+    activa: true
+    max_paginas: 2          # 48 productos por página (paginación por offset)
+    urls:
+      - https://platanitos.com/pe/productos/categoria/mujeres/ropa   # ROPA MUJER
+      - https://platanitos.com/pe/productos/categoria/hombres/ropa  # ROPA HOMBRE
+      - https://platanitos.com/pe/categoria/hogar-y-cocina          # HOGAR
+
+  lacuracao:                # Magento 2 (tecnología, electrohogar, hogar)
+    activa: true
+    max_paginas: 2          # 24 productos por página (?p=N)
+    urls:
+      - https://www.lacuracao.pe/tecnologia/televisores.html
+      - https://www.lacuracao.pe/tecnologia/celulares/celulares-y-smartphones.html
+      - https://www.lacuracao.pe/tecnologia/computacion/laptops.html
+      - https://www.lacuracao.pe/tecnologia/audifonos.html
+      - https://www.lacuracao.pe/electrohogar/lavado/lavadoras.html
+      - https://www.lacuracao.pe/hogar/menaje.html
+
   carsa:                    # VTEX (pese a verse como tienda "clásica", es VTEX)
     activa: true
     max_paginas: 2
 
 notificaciones:
-  max_por_corrida: 40       # tope de mensajes por corrida (sube/baja a gusto)
+  # Los mensajes se separan POR RANGO de descuento. Si defines un chat por
+  # rango en el secret TELEGRAM_CHATS_POR_RANGO (JSON), cada rango llega a
+  # SU chat; lo que no tenga chat asignado llega al chat base.
+  rangos: [40, 50, 60, 70, 80, 90]  # → rangos 40-50 · 50-60 · 60-70 · 70-80 · 80-90 · 90+
+  max_por_rango: 12         # tope de mensajes por rango en cada corrida
+  max_por_corrida: 80       # tope global de seguridad por corrida
   pausa_entre_mensajes_seg: 1.5
-  resumen: true             # mensaje resumen antes de las ofertas
+  resumen: true             # mensaje resumen (al chat base) antes de las ofertas
   prioridad_tiendas:        # estas tiendas se envían PRIMERO si tienen ofertas;
     - falabella             # dentro de cada grupo: mayor % primero (los 90%+ raros
     - ripley                # de Falabella van al frente), luego mayor ahorro en S/
